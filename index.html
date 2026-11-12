@@ -2,6 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<script>
+window.onerror=function(msg,src,line){try{var d=document.getElementById("errbox");if(!d){d=document.createElement("div");d.id="errbox";d.style.cssText="position:fixed;left:8px;right:8px;top:8px;z-index:9999;background:#b00020;color:#fff;padding:12px;border-radius:8px;font:14px/1.4 -apple-system,sans-serif";(document.body||document.documentElement).appendChild(d);}d.textContent="Erreur : "+msg+" (ligne "+line+") — "+navigator.userAgent;}catch(e){}};
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1f5f8b">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -155,8 +158,6 @@ const TARIF = { heure: 34.54, gestion: 12.5, km: 4.5 };
 const FREQS = { hebdo: { label: "Chaque semaine", passages: 4 }, bimensuel: { label: "Une semaine sur deux", passages: 2 }, mensuel: { label: "Une fois par mois", passages: 1 } };
 const MODES = { chaque: "Chaque passage", mensuel: "Une fois par mois", demande: "Sur demande" };
 const REPASSAGE = [["Chemise, chemisier", 6], ["Robe", 7], ["Pantalon", 5], ["T-shirt, polo", 3], ["Drap, housse de couette", 8], ["Taie, serviette, torchon", 2], ["Linge plié sans repassage", 1]];
-
-// Maison type: [niveau, pièce, présente par défaut, [[tâche, minutes, cochée]]]
 const MODELE = [
   ["Rez-de-chaussée", "Entrée", true, [["Dépoussiérer meubles et rangements", 3, 1], ["Miroir", 2, 1], ["Sols", 5, 1]]],
   ["Rez-de-chaussée", "Cuisine", true, [["Plan de travail : débarrasser, nettoyer, désinfecter", 10, 1], ["Évier et robinetterie", 5, 1], ["Plaque de cuisson", 5, 1], ["Micro-ondes : façade et intérieur", 5, 1], ["Façades des meubles et de l'électroménager", 10, 1], ["Vider ou remplir le lave-vaisselle", 5, 0], ["Sortir les poubelles", 3, 0], ["Intérieur du réfrigérateur", 15, 0, "mensuel"], ["Intérieur du four", 15, 0, "mensuel"], ["Sols", 10, 1]]],
@@ -177,15 +178,23 @@ const MODELE = [
   ["Circulations", "Arrivée et départ", true, [["Alarme, sortir et ranger le matériel", 10, 1]]]
 ];
 const NIVEAUX = ["Sous-sol", "Rez-de-chaussée", "Demi-palier", "Étage", "Circulations", "Extérieur"];
-
 const uid = () => Math.random().toString(36).slice(2, 9);
 function nouvelleVisite() {
   return {
-    id: uid(), exemple: false, date: new Date().toISOString().slice(0, 10),
+    id: uid(),
+    exemple: false,
+    date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
     client: { nom: "", adresse: "", tel: "", email: "", jour: "", configuration: "", acces: "", securite: "", animaux: "", produits: "", materiel: "", poubelles: "", linge: "", precautions: "", foyer: "" },
-    freq: "bimensuel", duree: null,
+    freq: "bimensuel",
+    duree: null,
     pieces: MODELE.map(([niveau, nom, present, taches]) => ({
-      id: uid(), niveau, nom, present, prio: 0, vitres: "", note: "",
+      id: uid(),
+      niveau,
+      nom,
+      present,
+      prio: 0,
+      vitres: "",
+      note: "",
       taches: taches.map(([t, min, on, mode]) => ({ id: uid(), t, min, on: !!on || mode === "mensuel" ? !!on : !!on, mode: mode || "chaque" }))
     })),
     repassage: { on: false, qte: REPASSAGE.map(() => 0) }
@@ -195,34 +204,54 @@ function exempleSadin() {
   const v = nouvelleVisite();
   v.exemple = true;
   Object.assign(v.client, { nom: "Mme Justine Sadin (exemple)", adresse: "4 rue Raoul Dautry, 54800 Conflans-en-Jarnisy", jour: "Mercredi matin", configuration: "Sous-sol, rez-de-chaussée, demi-palier, étage", securite: "Alarme et vidéosurveillance : procédure à confirmer avec la cliente", produits: "Buanderie au sous-sol", materiel: "Buanderie au sous-sol", linge: "Lave-linge et sèche-linge à la buanderie", precautions: "Canapé : dépoussiérer, ne pas aspirer", foyer: "Le fils de la cliente utilise la salle de bain 2" });
-  const p = n => v.pieces.find(x => x.nom === n);
-  p("Entrée").present = false; p("WC étage").present = false;
-  p("Bureau").note = "Sur demande uniquement"; p("Chambre d'amis").note = "Sur demande uniquement";
-  ["Salle de bain 2", "Chambre enfant", "Salle de jeu", "Dressing"].forEach(n => p(n).niveau = "Demi-palier");
+  const p = (n) => v.pieces.find((x) => x.nom === n);
+  p("Entrée").present = false;
+  p("WC étage").present = false;
+  p("Bureau").note = "Sur demande uniquement";
+  p("Chambre d'amis").note = "Sur demande uniquement";
+  ["Salle de bain 2", "Chambre enfant", "Salle de jeu", "Dressing"].forEach((n) => p(n).niveau = "Demi-palier");
   p("Chambre enfant").nom = "Chambre d'Eliott";
-  p("Cuisine").prio = 1; p("Salle de bain parentale").prio = 2; p("WC").prio = 3; p("Salle de bain 2").prio = 4;
+  p("Cuisine").prio = 1;
+  p("Salle de bain parentale").prio = 2;
+  p("WC").prio = 3;
+  p("Salle de bain 2").prio = 4;
   p("Salle de bain 2").note = "Baignoire en priorité. Douche non fonctionnelle : à confirmer.";
-  p("Cuisine").vitres = "A"; p("Salon-séjour").vitres = "A";
-  ["Chambre parentale", "Chambre d'Eliott", "Dressing"].forEach(n => p(n).vitres = "B");
-  p("Salon-séjour").taches.find(t => t.t.startsWith("Derrière")).on = true;
-  p("Salon-séjour").taches.find(t => t.t.startsWith("Derrière")).t = "Jeux derrière le canapé : nettoyer derrière, vitres";
+  p("Cuisine").vitres = "A";
+  p("Salon-séjour").vitres = "A";
+  ["Chambre parentale", "Chambre d'Eliott", "Dressing"].forEach((n) => p(n).vitres = "B");
+  p("Salon-séjour").taches.find((t) => t.t.startsWith("Derrière")).on = true;
+  p("Salon-séjour").taches.find((t) => t.t.startsWith("Derrière")).t = "Jeux derrière le canapé : nettoyer derrière, vitres";
   v.duree = 4;
   return v;
 }
-
 const KEY = "carnet-visites-v1";
 let state;
-try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
-if (!state || !state.visites || !state.visites.length) { const ex = exempleSadin(); state = { visites: [ex], courante: ex.id, onglet: "client" }; }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
-const cur = () => state.visites.find(v => v.id === state.courante) || state.visites[0];
-
+try {
+  state = JSON.parse(localStorage.getItem(KEY));
+} catch (e) {
+  state = null;
+}
+if (!state || !state.visites || !state.visites.length) {
+  const ex = exempleSadin();
+  state = { visites: [ex], courante: ex.id, onglet: "client" };
+}
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch (e) {
+  }
+}
+const cur = () => state.visites.find((v) => v.id === state.courante) || state.visites[0];
 function calcul(v) {
-  const pieces = v.pieces.filter(p => p.present);
+  const pieces = v.pieces.filter((p) => p.present);
   const passages = FREQS[v.freq].passages;
   let base = 0, mensuel = 0;
-  pieces.forEach(p => p.taches.forEach(t => { if (!t.on) return; if (t.mode === "chaque") base += +t.min || 0; else if (t.mode === "mensuel") mensuel += +t.min || 0; }));
-  const vA = pieces.filter(p => p.vitres === "A").length * 10, vB = pieces.filter(p => p.vitres === "B").length * 10;
+  pieces.forEach((p) => p.taches.forEach((t) => {
+    if (!t.on) return;
+    if (t.mode === "chaque") base += +t.min || 0;
+    else if (t.mode === "mensuel") mensuel += +t.min || 0;
+  }));
+  const vA = pieces.filter((p) => p.vitres === "A").length * 10, vB = pieces.filter((p) => p.vitres === "B").length * 10;
   const vitres = v.freq === "mensuel" ? vA + vB : Math.max(vA, vB);
   const mensuelParPassage = Math.round(mensuel / passages);
   const rep = v.repassage.on ? v.repassage.qte.reduce((s, q, i) => s + q * REPASSAGE[i][1], 0) : 0;
@@ -233,300 +262,352 @@ function calcul(v) {
   const ttc = heures * TARIF.heure + TARIF.gestion + passages * TARIF.km;
   return { base, vitres, vA, vB, mensuel, mensuelParPassage, rep, total, propose, duree, passages, heures, ttc, apres: ttc / 2 };
 }
-const hm = m => { m = Math.round(m); const h = Math.floor(m / 60), r = m % 60; return h ? `${h} h${r ? " " + String(r).padStart(2, "0") : ""}` : `${r} min`; };
-const eur = n => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const dureeTxt = d => { const h = Math.floor(d), m = Math.round((d - h) * 60); return `${h} h${m ? " " + m : ""}`; };
-
+const hm = (m) => {
+  m = Math.round(m);
+  const h = Math.floor(m / 60), r = m % 60;
+  return h ? "".concat(h, " h").concat(r ? " " + String(r).padStart(2, "0") : "") : "".concat(r, " min");
+};
+const eur = (n) => n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+const esc = (s) => String(s != null ? s : "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const dureeTxt = (d) => {
+  const h = Math.floor(d), m = Math.round((d - h) * 60);
+  return "".concat(h, " h").concat(m ? " " + m : "");
+};
 function renderRail() {
-  document.getElementById("rail").innerHTML = state.visites.map(v => `
-    <button class="visit ${v.id === state.courante ? "on" : ""}" data-visit="${v.id}">
-      <b>${esc(v.client.nom || "Client sans nom")}</b>
-      <span class="sub">${new Date(v.date).toLocaleDateString("fr-FR")} · ${FREQS[v.freq].label.toLowerCase()}</span>
-      ${v.exemple ? ' <span class="tag">Exemple</span>' : ""}
-    </button>`).join("");
+  document.getElementById("rail").innerHTML = state.visites.map((v) => '\n    <button class="visit '.concat(v.id === state.courante ? "on" : "", '" data-visit="').concat(v.id, '">\n      <b>').concat(esc(v.client.nom || "Client sans nom"), '</b>\n      <span class="sub">').concat(new Date(v.date).toLocaleDateString("fr-FR"), " · ").concat(FREQS[v.freq].label.toLowerCase(), "</span>\n      ").concat(v.exemple ? ' <span class="tag">Exemple</span>' : "", "\n    </button>")).join("");
 }
-
 const CHAMPS = [["nom", "Client"], ["adresse", "Adresse d'intervention"], ["tel", "Téléphone", "tel"], ["email", "E-mail", "email"], ["jour", "Jour et créneau"], ["configuration", "Configuration de la maison"], ["acces", "Accès et clés"], ["securite", "Alarme, vidéosurveillance"], ["animaux", "Animaux"], ["produits", "Rangement des produits"], ["materiel", "Rangement aspirateur et serpillère"], ["poubelles", "Poubelles et tri"], ["linge", "Linge (machines, séchage)"], ["precautions", "Interdits et précautions"], ["foyer", "Personnes du foyer"]];
-
 function renderClient(v) {
-  return `<div class="panel">
-    <div class="grid2">
-      <label class="f">Date de la visite<input type="text" id="f-date" data-field="date" value="${esc(v.date)}"></label>
-      <label class="f">Fréquence souhaitée<select id="f-freq" data-field="freq">${Object.entries(FREQS).map(([k, f]) => `<option value="${k}" ${v.freq === k ? "selected" : ""}>${f.label}</option>`).join("")}</select></label>
-      ${CHAMPS.map(([k, l, type]) => `<label class="f">${l}<input type="${type || "text"}" id="c-${k}" data-client="${k}" value="${esc(v.client[k])}"></label>`).join("")}
-    </div>
-    <div class="card"><h3>Photos générales</h3>
-      <p class="note">Rangement des produits et du matériel, compteur, alarme, accès… Chaque photo peut recevoir une légende.</p>
-      ${renderPhotos("general")}</div>
-    <div class="row"><button class="btn danger" data-action="supprimer">Supprimer cette visite</button></div>
-  </div>`;
+  return '<div class="panel">\n    <div class="grid2">\n      <label class="f">Date de la visite<input type="text" id="f-date" data-field="date" value="'.concat(esc(v.date), '"></label>\n      <label class="f">Fréquence souhaitée<select id="f-freq" data-field="freq">').concat(Object.entries(FREQS).map(([k, f]) => '<option value="'.concat(k, '" ').concat(v.freq === k ? "selected" : "", ">").concat(f.label, "</option>")).join(""), "</select></label>\n      ").concat(CHAMPS.map(([k, l, type]) => '<label class="f">'.concat(l, '<input type="').concat(type || "text", '" id="c-').concat(k, '" data-client="').concat(k, '" value="').concat(esc(v.client[k]), '"></label>')).join(""), '\n    </div>\n    <div class="card"><h3>Photos générales</h3>\n      <p class="note">Rangement des produits et du matériel, compteur, alarme, accès… Chaque photo peut recevoir une légende.</p>\n      ').concat(renderPhotos("general"), '</div>\n    <div class="row"><button class="btn danger" data-action="supprimer">Supprimer cette visite</button></div>\n  </div>');
 }
-
 function renderPieces(v) {
-  const niveaux = NIVEAUX.filter(n => v.pieces.some(p => p.niveau === n));
-  return `<div class="panel">
-    <p class="note">Décochez les pièces absentes, ajustez les tâches, touchez le rond pour donner une priorité (1 à 5) et choisissez le passage des vitres.</p>
-    ${niveaux.map(n => `<div class="level">${n}</div>${v.pieces.filter(p => p.niveau === n).map(p => renderPiece(p)).join("")}`).join("")}
-    <div class="card"><h3>Ajouter une pièce</h3>
-      <div class="addline"><input type="text" id="np-nom" placeholder="Nom de la pièce (véranda, garage…)">
-      <select id="np-niv">${NIVEAUX.map(n => `<option>${n}</option>`).join("")}</select>
-      <button class="btn" data-action="ajout-piece">Ajouter</button></div></div>
-  </div>`;
+  const niveaux = NIVEAUX.filter((n) => v.pieces.some((p) => p.niveau === n));
+  return '<div class="panel">\n    <p class="note">Décochez les pièces absentes, ajustez les tâches, touchez le rond pour donner une priorité (1 à 5) et choisissez le passage des vitres.</p>\n    '.concat(niveaux.map((n) => '<div class="level">'.concat(n, "</div>").concat(v.pieces.filter((p) => p.niveau === n).map((p) => renderPiece(p)).join(""))).join(""), '\n    <div class="card"><h3>Ajouter une pièce</h3>\n      <div class="addline"><input type="text" id="np-nom" placeholder="Nom de la pièce (véranda, garage…)">\n      <select id="np-niv">').concat(NIVEAUX.map((n) => "<option>".concat(n, "</option>")).join(""), '</select>\n      <button class="btn" data-action="ajout-piece">Ajouter</button></div></div>\n  </div>');
 }
 function renderPiece(p) {
-  const min = p.taches.filter(t => t.on && t.mode === "chaque").reduce((s, t) => s + (+t.min || 0), 0);
-  return `<section class="room ${p.present ? "" : "off"}">
-    <div class="room-h">
-      <label class="toggle" title="Pièce présente"><input type="checkbox" data-piece="${p.id}" data-k="present" ${p.present ? "checked" : ""}></label>
-      <h3><input class="rn" id="rn-${p.id}" data-piece="${p.id}" data-k="nom" value="${esc(p.nom)}" aria-label="Nom de la pièce"></h3>
-      <span class="mins">${hm(min)}</span>
-      <div class="vit" role="group" aria-label="Vitres">${["", "A", "B"].map(x => `<button class="${p.vitres === x ? "on" : ""}" data-vitres="${x}" data-piece="${p.id}">${x ? "Vitres " + x : "Sans vitres"}</button>`).join("")}</div>
-      <button class="prio ${p.prio ? "set" : ""}" data-prio="${p.id}" aria-label="Priorité">${p.prio || "–"}</button>
-    </div>
-    ${p.present ? `<div class="tasks">
-      ${p.taches.map(t => `<div class="task">
-        <input type="checkbox" aria-label="${esc(t.t)}" data-tache="${t.id}" data-piece="${p.id}" data-k="on" ${t.on ? "checked" : ""}>
-        <span>${esc(t.t)}</span>
-        <select aria-label="Fréquence" data-tache="${t.id}" data-piece="${p.id}" data-k="mode">${Object.entries(MODES).map(([k, l]) => `<option value="${k}" ${t.mode === k ? "selected" : ""}>${l}</option>`).join("")}</select>
-        <span class="mins">${t.min} min</span>
-      </div>`).join("")}
-      <div class="addline"><input type="text" id="nt-${p.id}" placeholder="Autre tâche"><input type="text" inputmode="numeric" class="n" id="ntm-${p.id}" placeholder="min"><button class="btn" data-action="ajout-tache" data-piece="${p.id}">Ajouter</button></div>
-      <div class="addline"><input type="text" id="note-${p.id}" data-piece="${p.id}" data-k="note" placeholder="Consigne pour cette pièce" value="${esc(p.note)}"></div>
-      ${renderPhotos(p.id)}
-    </div>` : ""}
-  </section>`;
+  const min = p.taches.filter((t) => t.on && t.mode === "chaque").reduce((s, t) => s + (+t.min || 0), 0);
+  return '<section class="room '.concat(p.present ? "" : "off", '">\n    <div class="room-h">\n      <label class="toggle" title="Pièce présente"><input type="checkbox" data-piece="').concat(p.id, '" data-k="present" ').concat(p.present ? "checked" : "", '></label>\n      <h3><input class="rn" id="rn-').concat(p.id, '" data-piece="').concat(p.id, '" data-k="nom" value="').concat(esc(p.nom), '" aria-label="Nom de la pièce"></h3>\n      <span class="mins">').concat(hm(min), '</span>\n      <div class="vit" role="group" aria-label="Vitres">').concat(["", "A", "B"].map((x) => '<button class="'.concat(p.vitres === x ? "on" : "", '" data-vitres="').concat(x, '" data-piece="').concat(p.id, '">').concat(x ? "Vitres " + x : "Sans vitres", "</button>")).join(""), '</div>\n      <button class="prio ').concat(p.prio ? "set" : "", '" data-prio="').concat(p.id, '" aria-label="Priorité">').concat(p.prio || "–", "</button>\n    </div>\n    ").concat(p.present ? '<div class="tasks">\n      '.concat(p.taches.map((t) => '<div class="task">\n        <input type="checkbox" aria-label="'.concat(esc(t.t), '" data-tache="').concat(t.id, '" data-piece="').concat(p.id, '" data-k="on" ').concat(t.on ? "checked" : "", ">\n        <span>").concat(esc(t.t), '</span>\n        <select aria-label="Fréquence" data-tache="').concat(t.id, '" data-piece="').concat(p.id, '" data-k="mode">').concat(Object.entries(MODES).map(([k, l]) => '<option value="'.concat(k, '" ').concat(t.mode === k ? "selected" : "", ">").concat(l, "</option>")).join(""), '</select>\n        <span class="mins">').concat(t.min, " min</span>\n      </div>")).join(""), '\n      <div class="addline"><input type="text" id="nt-').concat(p.id, '" placeholder="Autre tâche"><input type="text" inputmode="numeric" class="n" id="ntm-').concat(p.id, '" placeholder="min"><button class="btn" data-action="ajout-tache" data-piece="').concat(p.id, '">Ajouter</button></div>\n      <div class="addline"><input type="text" id="note-').concat(p.id, '" data-piece="').concat(p.id, '" data-k="note" placeholder="Consigne pour cette pièce" value="').concat(esc(p.note), '"></div>\n      ').concat(renderPhotos(p.id), "\n    </div>") : "", "\n  </section>");
 }
-
 function renderOptions(v) {
   const r = v.repassage, c = calcul(v);
-  return `<div class="panel">
-    <div class="card panel">
-      <label class="toggle"><input type="checkbox" id="rep-on" data-action="rep-on" ${r.on ? "checked" : ""}><h2>Option repassage</h2></label>
-      <p class="note">Indiquez le panier habituel par passage. Repère : environ 15 articles variés par heure.</p>
-      ${r.on ? `<div class="items">${REPASSAGE.map(([l, m], i) => `<div class="item"><span>${l}<br><span class="note">${m} min</span></span>
-        <div class="step"><button data-rep="${i}" data-d="-1" aria-label="Moins">−</button><span>${r.qte[i]}</span><button data-rep="${i}" data-d="1" aria-label="Plus">+</button></div></div>`).join("")}</div>
-        <p><b>Repassage par passage : ${hm(c.rep)}</b></p>` : ""}
-    </div>
-  </div>`;
+  return '<div class="panel">\n    <div class="card panel">\n      <label class="toggle"><input type="checkbox" id="rep-on" data-action="rep-on" '.concat(r.on ? "checked" : "", '><h2>Option repassage</h2></label>\n      <p class="note">Indiquez le panier habituel par passage. Repère : environ 15 articles variés par heure.</p>\n      ').concat(r.on ? '<div class="items">'.concat(REPASSAGE.map(([l, m], i) => '<div class="item"><span>'.concat(l, '<br><span class="note">').concat(m, ' min</span></span>\n        <div class="step"><button data-rep="').concat(i, '" data-d="-1" aria-label="Moins">−</button><span>').concat(r.qte[i], '</span><button data-rep="').concat(i, '" data-d="1" aria-label="Plus">+</button></div></div>')).join(""), "</div>\n        <p><b>Repassage par passage : ").concat(hm(c.rep), "</b></p>") : "", "\n    </div>\n  </div>");
 }
-
 function renderRecap(v) {
   const c = calcul(v);
-  const prios = v.pieces.filter(p => p.present && p.prio).sort((a, b) => a.prio - b.prio);
+  const prios = v.pieces.filter((p) => p.present && p.prio).sort((a, b) => a.prio - b.prio);
   const diff = c.total - c.duree * 60;
-  return `<div class="panel">
-    <div class="card"><h2>Temps d'un passage</h2>
-      <table class="r">
-        <tr><td>Tâches à chaque passage</td><td class="n">${hm(c.base)}</td></tr>
-        <tr><td>Vitres (passage A ${hm(c.vA)}, passage B ${hm(c.vB)})</td><td class="n">${hm(c.vitres)}</td></tr>
-        <tr><td>Tâches mensuelles (${hm(c.mensuel)} réparties sur ${c.passages} passage${c.passages > 1 ? "s" : ""})</td><td class="n">${hm(c.mensuelParPassage)}</td></tr>
-        <tr><td>Repassage</td><td class="n">${hm(c.rep)}</td></tr>
-        <tr class="tot"><td>Total estimé</td><td class="n">${hm(c.total)}</td></tr>
-      </table>
-      <p>Durée proposée : <b>${dureeTxt(c.propose)}</b> par passage.</p>
-      <label class="f">Durée retenue avec le client
-        <select id="f-duree" data-field="duree"><option value="">Durée proposée (${dureeTxt(c.propose)})</option>${[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6].map(d => `<option value="${d}" ${v.duree === d ? "selected" : ""}>${dureeTxt(d)}</option>`).join("")}</select></label>
-      ${diff > 0 ? `<p class="note" style="color:var(--warn)">Il manque ${hm(diff)} pour tout faire en ${dureeTxt(c.duree)} : les tâches hors priorités seront faites selon le temps disponible.</p>` : ""}
-    </div>
-    <div class="card"><h2>Estimation du devis mensuel</h2>
-      <table class="r">
-        <tr><td>Entretien : ${dureeTxt(c.duree)} × ${c.passages} passage${c.passages > 1 ? "s" : ""} = ${c.heures} h × ${eur(TARIF.heure)}</td><td class="n">${eur(c.heures * TARIF.heure)}</td></tr>
-        <tr><td>Frais de gestion</td><td class="n">${eur(TARIF.gestion)}</td></tr>
-        <tr><td>Forfait kilomètre (${c.passages} × ${eur(TARIF.km)})</td><td class="n">${eur(c.passages * TARIF.km)}</td></tr>
-        <tr class="tot"><td>Total TTC par mois</td><td class="n">${eur(c.ttc)}</td></tr>
-        <tr><td>Après crédit d'impôt de 50 %</td><td class="n">${eur(c.apres)}</td></tr>
-      </table>
-    </div>
-    <div class="card"><h2>Priorités du client</h2>
-      ${prios.length ? `<ol class="priolist">${prios.map(p => `<li>${esc(p.nom)}${p.note ? ` <span class="note">(${esc(p.note)})</span>` : ""}</li>`).join("")}<li>Le reste de la maison selon le temps disponible</li></ol>` : `<p class="note">Aucune priorité. Touchez le rond à côté d'une pièce, dans l'onglet Pièces.</p>`}
-    </div>
-  </div>`;
+  return '<div class="panel">\n    <div class="card"><h2>Temps d\'un passage</h2>\n      <table class="r">\n        <tr><td>Tâches à chaque passage</td><td class="n">'.concat(hm(c.base), "</td></tr>\n        <tr><td>Vitres (passage A ").concat(hm(c.vA), ", passage B ").concat(hm(c.vB), ')</td><td class="n">').concat(hm(c.vitres), "</td></tr>\n        <tr><td>Tâches mensuelles (").concat(hm(c.mensuel), " réparties sur ").concat(c.passages, " passage").concat(c.passages > 1 ? "s" : "", ')</td><td class="n">').concat(hm(c.mensuelParPassage), '</td></tr>\n        <tr><td>Repassage</td><td class="n">').concat(hm(c.rep), '</td></tr>\n        <tr class="tot"><td>Total estimé</td><td class="n">').concat(hm(c.total), "</td></tr>\n      </table>\n      <p>Durée proposée : <b>").concat(dureeTxt(c.propose), '</b> par passage.</p>\n      <label class="f">Durée retenue avec le client\n        <select id="f-duree" data-field="duree"><option value="">Durée proposée (').concat(dureeTxt(c.propose), ")</option>").concat([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6].map((d) => '<option value="'.concat(d, '" ').concat(v.duree === d ? "selected" : "", ">").concat(dureeTxt(d), "</option>")).join(""), "</select></label>\n      ").concat(diff > 0 ? '<p class="note" style="color:var(--warn)">Il manque '.concat(hm(diff), " pour tout faire en ").concat(dureeTxt(c.duree), " : les tâches hors priorités seront faites selon le temps disponible.</p>") : "", '\n    </div>\n    <div class="card"><h2>Estimation du devis mensuel</h2>\n      <table class="r">\n        <tr><td>Entretien : ').concat(dureeTxt(c.duree), " × ").concat(c.passages, " passage").concat(c.passages > 1 ? "s" : "", " = ").concat(c.heures, " h × ").concat(eur(TARIF.heure), '</td><td class="n">').concat(eur(c.heures * TARIF.heure), '</td></tr>\n        <tr><td>Frais de gestion</td><td class="n">').concat(eur(TARIF.gestion), "</td></tr>\n        <tr><td>Forfait kilomètre (").concat(c.passages, " × ").concat(eur(TARIF.km), ')</td><td class="n">').concat(eur(c.passages * TARIF.km), '</td></tr>\n        <tr class="tot"><td>Total TTC par mois</td><td class="n">').concat(eur(c.ttc), '</td></tr>\n        <tr><td>Après crédit d\'impôt de 50 %</td><td class="n">').concat(eur(c.apres), '</td></tr>\n      </table>\n    </div>\n    <div class="card"><h2>Priorités du client</h2>\n      ').concat(prios.length ? '<ol class="priolist">'.concat(prios.map((p) => "<li>".concat(esc(p.nom)).concat(p.note ? ' <span class="note">('.concat(esc(p.note), ")</span>") : "", "</li>")).join(""), "<li>Le reste de la maison selon le temps disponible</li></ol>") : "<p class=\"note\">Aucune priorité. Touchez le rond à côté d'une pièce, dans l'onglet Pièces.</p>", "\n    </div>\n  </div>");
 }
-
 const ONGLETS = [["client", "Client"], ["pieces", "Pièces et tâches"], ["options", "Repassage"], ["recap", "Récapitulatif"], ["feuille", "Feuille de route"]];
 function render() {
-  const v = cur(); state.courante = v.id;
+  const v = cur();
+  state.courante = v.id;
   renderRail();
   const views = { client: renderClient, pieces: renderPieces, options: renderOptions, recap: renderRecap, feuille: renderFeuille };
-  document.getElementById("main").innerHTML = `
-    <nav class="tabs">${ONGLETS.map(([k, l]) => `<button class="tab ${state.onglet === k ? "on" : ""}" data-tab="${k}">${l}</button>`).join("")}</nav>
-    ${views[state.onglet](v)}`;
+  document.getElementById("main").innerHTML = '\n    <nav class="tabs">'.concat(ONGLETS.map(([k, l]) => '<button class="tab '.concat(state.onglet === k ? "on" : "", '" data-tab="').concat(k, '">').concat(l, "</button>")).join(""), "</nav>\n    ").concat(views[state.onglet](v));
   renderBar(v);
 }
 function renderBar(v) {
   const c = calcul(v), over = c.total > c.duree * 60;
-  document.getElementById("bar").innerHTML = `
-    <div><span class="k">Temps estimé</span><span class="v ${over ? "alert" : ""}">${hm(c.total)}</span></div>
-    <div><span class="k">Durée par passage</span><span class="v">${dureeTxt(c.duree)}</span></div>
-    <div><span class="k">${FREQS[v.freq].label}</span><span class="v">${eur(c.ttc)} / mois</span></div>
-    <div><span class="k">Après crédit d'impôt</span><span class="v">${eur(c.apres)}</span></div>`;
+  document.getElementById("bar").innerHTML = '\n    <div><span class="k">Temps estimé</span><span class="v '.concat(over ? "alert" : "", '">').concat(hm(c.total), '</span></div>\n    <div><span class="k">Durée par passage</span><span class="v">').concat(dureeTxt(c.duree), '</span></div>\n    <div><span class="k">').concat(FREQS[v.freq].label, '</span><span class="v">').concat(eur(c.ttc), ' / mois</span></div>\n    <div><span class="k">Après crédit d\'impôt</span><span class="v">').concat(eur(c.apres), "</span></div>");
 }
-function update(keepFocus) { save(); if (keepFocus) { renderRail(); renderBar(cur()); } else render(); }
-
-const findP = (v, id) => v.pieces.find(p => p.id === id);
-document.addEventListener("click", e => {
-  const z = e.target.closest(".zoom"); if (z) { z.remove(); return; }
-  const im = e.target.closest("img[data-zoom]"); if (im) { const o = document.createElement("div"); o.className = "zoom"; o.innerHTML = `<img src="${im.src}" alt="">`; document.body.appendChild(o); return; }
-  const b = e.target.closest("button, input[type=checkbox]"); if (!b) return;
+function update(keepFocus) {
+  save();
+  if (keepFocus) {
+    renderRail();
+    renderBar(cur());
+  } else render();
+}
+const findP = (v, id) => v.pieces.find((p) => p.id === id);
+document.addEventListener("click", (e) => {
+  const z = e.target.closest(".zoom");
+  if (z) {
+    z.remove();
+    return;
+  }
+  const im = e.target.closest("img[data-zoom]");
+  if (im) {
+    const o = document.createElement("div");
+    o.className = "zoom";
+    o.innerHTML = '<img src="'.concat(im.src, '" alt="">');
+    document.body.appendChild(o);
+    return;
+  }
+  const b = e.target.closest("button, input[type=checkbox]");
+  if (!b) return;
   const v = cur(), d = b.dataset;
-  if (b.id === "newVisit") { const n = nouvelleVisite(); state.visites.unshift(n); state.courante = n.id; state.onglet = "client"; return update(); }
+  if (b.id === "newVisit") {
+    const n = nouvelleVisite();
+    state.visites.unshift(n);
+    state.courante = n.id;
+    state.onglet = "client";
+    return update();
+  }
   if (d.delphoto) {
-    if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Confirmer"; return; }
-    supprimerPhoto(d.delphoto); return render();
+    if (b.dataset.confirm !== "1") {
+      b.dataset.confirm = "1";
+      b.textContent = "Confirmer";
+      return;
+    }
+    supprimerPhoto(d.delphoto);
+    return render();
   }
-  if (d.action === "imprimer") { window.print(); return; }
-  if (d.action === "exporter") { return exporter(v, b); }
-  if (d.visit) { state.courante = d.visit; return update(); }
-  if (d.tab) { state.onglet = d.tab; return update(); }
-  if (d.prio) { const p = findP(v, d.prio); p.prio = (p.prio + 1) % 6; return update(); }
-  if ("vitres" in d && d.piece) { findP(v, d.piece).vitres = d.vitres; return update(); }
-  if (d.rep) { const q = v.repassage.qte; q[d.rep] = Math.max(0, q[d.rep] + +d.d); return update(); }
-  if (d.action === "ajout-piece") { const nom = document.getElementById("np-nom").value.trim(); if (!nom) return; v.pieces.push({ id: uid(), niveau: document.getElementById("np-niv").value, nom, present: true, prio: 0, vitres: "", note: "", taches: [{ id: uid(), t: "Dépoussiérer", min: 5, on: true, mode: "chaque" }, { id: uid(), t: "Sols", min: 8, on: true, mode: "chaque" }] }); return update(); }
-  if (d.action === "ajout-tache") { const t = document.getElementById("nt-" + d.piece).value.trim(), m = parseInt(document.getElementById("ntm-" + d.piece).value, 10) || 5; if (!t) return; findP(v, d.piece).taches.push({ id: uid(), t, min: m, on: true, mode: "chaque" }); return update(); }
+  if (d.action === "imprimer") {
+    window.print();
+    return;
+  }
+  if (d.action === "exporter") {
+    return exporter(v, b);
+  }
+  if (d.visit) {
+    state.courante = d.visit;
+    return update();
+  }
+  if (d.tab) {
+    state.onglet = d.tab;
+    return update();
+  }
+  if (d.prio) {
+    const p = findP(v, d.prio);
+    p.prio = (p.prio + 1) % 6;
+    return update();
+  }
+  if ("vitres" in d && d.piece) {
+    findP(v, d.piece).vitres = d.vitres;
+    return update();
+  }
+  if (d.rep) {
+    const q = v.repassage.qte;
+    q[d.rep] = Math.max(0, q[d.rep] + +d.d);
+    return update();
+  }
+  if (d.action === "ajout-piece") {
+    const nom = document.getElementById("np-nom").value.trim();
+    if (!nom) return;
+    v.pieces.push({ id: uid(), niveau: document.getElementById("np-niv").value, nom, present: true, prio: 0, vitres: "", note: "", taches: [{ id: uid(), t: "Dépoussiérer", min: 5, on: true, mode: "chaque" }, { id: uid(), t: "Sols", min: 8, on: true, mode: "chaque" }] });
+    return update();
+  }
+  if (d.action === "ajout-tache") {
+    const t = document.getElementById("nt-" + d.piece).value.trim(), m = parseInt(document.getElementById("ntm-" + d.piece).value, 10) || 5;
+    if (!t) return;
+    findP(v, d.piece).taches.push({ id: uid(), t, min: m, on: true, mode: "chaque" });
+    return update();
+  }
   if (d.action === "supprimer") {
-    if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Toucher encore pour confirmer"; return; }
-    photosDe(v.id).forEach(ph => supprimerPhoto(ph.id));
-    state.visites = state.visites.filter(x => x.id !== v.id);
+    if (b.dataset.confirm !== "1") {
+      b.dataset.confirm = "1";
+      b.textContent = "Toucher encore pour confirmer";
+      return;
+    }
+    photosDe(v.id).forEach((ph) => supprimerPhoto(ph.id));
+    state.visites = state.visites.filter((x) => x.id !== v.id);
     if (!state.visites.length) state.visites.push(nouvelleVisite());
-    state.courante = state.visites[0].id; return update();
+    state.courante = state.visites[0].id;
+    return update();
   }
 });
-document.addEventListener("change", e => {
+document.addEventListener("change", (e) => {
   const el = e.target, d = el.dataset, v = cur();
-  if (d.photo) { ajouterPhotos(v.id, d.photo, el.files); el.value = ""; return; }
-  if (d.action === "rep-on") { v.repassage.on = el.checked; return update(); }
-  if (d.tache) { const t = findP(v, d.piece).taches.find(x => x.id === d.tache); t[d.k] = el.type === "checkbox" ? el.checked : el.value; return update(); }
-  if (d.piece && d.k === "present") { findP(v, d.piece).present = el.checked; return update(); }
-  if (d.field === "freq") { v.freq = el.value; return update(); }
-  if (d.field === "duree") { v.duree = el.value ? +el.value : null; return update(); }
+  if (d.photo) {
+    ajouterPhotos(v.id, d.photo, el.files);
+    el.value = "";
+    return;
+  }
+  if (d.action === "rep-on") {
+    v.repassage.on = el.checked;
+    return update();
+  }
+  if (d.tache) {
+    const t = findP(v, d.piece).taches.find((x) => x.id === d.tache);
+    t[d.k] = el.type === "checkbox" ? el.checked : el.value;
+    return update();
+  }
+  if (d.piece && d.k === "present") {
+    findP(v, d.piece).present = el.checked;
+    return update();
+  }
+  if (d.field === "freq") {
+    v.freq = el.value;
+    return update();
+  }
+  if (d.field === "duree") {
+    v.duree = el.value ? +el.value : null;
+    return update();
+  }
 });
-document.addEventListener("input", e => {
+document.addEventListener("input", (e) => {
   const el = e.target, d = el.dataset, v = cur();
-  if (d.legende) { const ph = PHOTOS.find(x => x.id === d.legende); if (ph) { ph.legende = el.value; majPhoto(ph); } return; }
-  if (d.client) { v.client[d.client] = el.value; return update(true); }
-  if (d.field === "date") { v.date = el.value; return update(true); }
-  if (d.piece && (d.k === "nom" || d.k === "note")) { findP(v, d.piece)[d.k] = el.value; return update(true); }
+  if (d.legende) {
+    const ph = PHOTOS.find((x) => x.id === d.legende);
+    if (ph) {
+      ph.legende = el.value;
+      majPhoto(ph);
+    }
+    return;
+  }
+  if (d.client) {
+    v.client[d.client] = el.value;
+    return update(true);
+  }
+  if (d.field === "date") {
+    v.date = el.value;
+    return update(true);
+  }
+  if (d.piece && (d.k === "nom" || d.k === "note")) {
+    findP(v, d.piece)[d.k] = el.value;
+    return update(true);
+  }
 });
-
-/* ---------- Photos : compressées puis stockées hors ligne dans IndexedDB ---------- */
 const PHOTO_MAX = 1600, PHOTO_QUAL = 0.72;
-let PHOTOS = []; const URLS = {}; let enCours = 0;
+let PHOTOS = [];
+const URLS = {};
+let enCours = 0;
 const dbP = new Promise((ok, ko) => {
   try {
     const r = indexedDB.open("carnet-photos", 1);
     r.onupgradeneeded = () => r.result.createObjectStore("photos", { keyPath: "id" });
-    r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error);
-  } catch (e) { ko(e); }
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => ko(r.error);
+  } catch (e) {
+    ko(e);
+  }
 });
-function tx(mode, fn) { return dbP.then(db => new Promise((ok, ko) => { const t = db.transaction("photos", mode); const req = fn(t.objectStore("photos")); t.oncomplete = () => ok(req && req.result); t.onerror = () => ko(t.error); })); }
-const photosDe = (visite, piece) => PHOTOS.filter(p => p.visite === visite && (piece === undefined || p.piece === piece));
-const urlDe = ph => URLS[ph.id] || (URLS[ph.id] = URL.createObjectURL(ph.blob));
-function majPhoto(ph) { tx("readwrite", s => s.put(ph)).catch(() => {}); }
+function tx(mode, fn) {
+  return dbP.then((db) => new Promise((ok, ko) => {
+    const t = db.transaction("photos", mode);
+    const req = fn(t.objectStore("photos"));
+    t.oncomplete = () => ok(req && req.result);
+    t.onerror = () => ko(t.error);
+  }));
+}
+const photosDe = (visite, piece) => PHOTOS.filter((p) => p.visite === visite && (piece === void 0 || p.piece === piece));
+const urlDe = (ph) => URLS[ph.id] || (URLS[ph.id] = URL.createObjectURL(ph.blob));
+function majPhoto(ph) {
+  tx("readwrite", (s) => s.put(ph)).catch(() => {
+  });
+}
 function supprimerPhoto(id) {
-  PHOTOS = PHOTOS.filter(p => p.id !== id);
-  if (URLS[id]) { URL.revokeObjectURL(URLS[id]); delete URLS[id]; }
-  tx("readwrite", s => s.delete(id)).catch(() => {});
+  PHOTOS = PHOTOS.filter((p) => p.id !== id);
+  if (URLS[id]) {
+    URL.revokeObjectURL(URLS[id]);
+    delete URLS[id];
+  }
+  tx("readwrite", (s) => s.delete(id)).catch(() => {
+  });
 }
 async function decoder(file) {
-  try { return await createImageBitmap(file, { imageOrientation: "from-image" }); } catch (e) {}
-  return await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = URL.createObjectURL(file); });
+  try {
+    return await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch (e) {
+  }
+  return await new Promise((ok, ko) => {
+    const i = new Image();
+    i.onload = () => ok(i);
+    i.onerror = ko;
+    i.src = URL.createObjectURL(file);
+  });
 }
 async function compresser(file) {
   const img = await decoder(file);
   const w0 = img.width || img.naturalWidth, h0 = img.height || img.naturalHeight;
   const k = Math.min(1, PHOTO_MAX / Math.max(w0, h0));
-  const c = document.createElement("canvas"); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+  const c = document.createElement("canvas");
+  c.width = Math.round(w0 * k);
+  c.height = Math.round(h0 * k);
   c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
   if (img.close) img.close();
-  return await new Promise(ok => c.toBlob(ok, "image/jpeg", PHOTO_QUAL));
+  return await new Promise((ok) => c.toBlob(ok, "image/jpeg", PHOTO_QUAL));
 }
 async function ajouterPhotos(visite, piece, files) {
-  const liste = [...(files || [])]; if (!liste.length) return;
-  enCours += liste.length; render();
+  const liste = [...files || []];
+  if (!liste.length) return;
+  enCours += liste.length;
+  render();
   for (const f of liste) {
     try {
       const blob = await compresser(f);
       const ph = { id: uid(), visite, piece, blob, legende: "", date: Date.now() };
-      PHOTOS.push(ph); await tx("readwrite", s => s.put(ph));
-    } catch (e) { alert("Cette photo n'a pas pu être enregistrée."); }
+      PHOTOS.push(ph);
+      await tx("readwrite", (s) => s.put(ph));
+    } catch (e) {
+      alert("Cette photo n'a pas pu être enregistrée.");
+    }
     enCours--;
   }
   render();
 }
 function renderPhotos(piece) {
   const v = cur(), list = photosDe(v.id, piece);
-  return `<div class="photos">
-    <div class="pbtns">
-      <label class="btn pbtn">📷 Prendre une photo<input type="file" accept="image/*" capture="environment" data-photo="${piece}"></label>
-      <label class="btn pbtn ghost">🖼️ Depuis la galerie<input type="file" accept="image/*" multiple data-photo="${piece}"></label>
-      ${enCours ? `<span class="busy">Enregistrement en cours…</span>` : ""}
-    </div>
-    ${list.length ? `<div class="thumbs">${list.map(ph => `<div class="thumb">
-      <img src="${urlDe(ph)}" alt="${esc(ph.legende || "Photo")}" data-zoom="1">
-      <input type="text" placeholder="Légende" data-legende="${ph.id}" value="${esc(ph.legende)}">
-      <button class="del" data-delphoto="${ph.id}">Supprimer</button></div>`).join("")}</div>` : ""}
-  </div>`;
+  return '<div class="photos">\n    <div class="pbtns">\n      <label class="btn pbtn">📷 Prendre une photo<input type="file" accept="image/*" capture="environment" data-photo="'.concat(piece, '"></label>\n      <label class="btn pbtn ghost">🖼️ Depuis la galerie<input type="file" accept="image/*" multiple data-photo="').concat(piece, '"></label>\n      ').concat(enCours ? '<span class="busy">Enregistrement en cours…</span>' : "", "\n    </div>\n    ").concat(list.length ? '<div class="thumbs">'.concat(list.map((ph) => '<div class="thumb">\n      <img src="'.concat(urlDe(ph), '" alt="').concat(esc(ph.legende || "Photo"), '" data-zoom="1">\n      <input type="text" placeholder="Légende" data-legende="').concat(ph.id, '" value="').concat(esc(ph.legende), '">\n      <button class="del" data-delphoto="').concat(ph.id, '">Supprimer</button></div>')).join(""), "</div>") : "", "\n  </div>");
 }
-dbP.then(() => tx("readonly", s => s.getAll())).then(all => { PHOTOS = (all || []).sort((a, b) => a.date - b.date); render(); }).catch(() => {});
-try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
-
-/* ---------- Feuille de route imprimable, avec les photos ---------- */
+dbP.then(() => tx("readonly", (s) => s.getAll())).then((all) => {
+  PHOTOS = (all || []).sort((a, b) => a.date - b.date);
+  render();
+}).catch(() => {
+});
+try {
+  navigator.storage && navigator.storage.persist && navigator.storage.persist();
+} catch (e) {
+}
 function feuilleHTML(v, src) {
   const c = calcul(v), cl = v.client;
-  const prios = v.pieces.filter(p => p.present && p.prio).sort((a, b) => a.prio - b.prio);
-  const fig = list => list.length ? `<div class="sph">${list.map(ph => `<figure><img src="${src(ph)}" alt=""><figcaption>${esc(ph.legende)}</figcaption></figure>`).join("")}</div>` : "";
-  const infos = CHAMPS.filter(([k]) => k !== "nom" && cl[k]).map(([k, l]) => `<dt>${l}</dt><dd>${esc(cl[k])}</dd>`).join("");
-  const niveaux = NIVEAUX.filter(n => v.pieces.some(p => p.present && p.niveau === n));
-  return `<div class="sheet">
-    <h1>Feuille de route : ${esc(cl.nom || "client")}</h1>
-    <p class="sub">Visite du ${new Date(v.date).toLocaleDateString("fr-FR")} · ${FREQS[v.freq].label.toLowerCase()} · ${dureeTxt(c.duree)} par passage · ${eur(c.ttc)} TTC par mois</p>
-    ${infos ? `<dl>${infos}</dl>` : ""}
-    ${fig(photosDe(v.id, "general"))}
-    ${prios.length ? `<h2>Priorités</h2><ol class="priolist">${prios.map(p => `<li>${esc(p.nom)}</li>`).join("")}<li>Le reste de la maison selon le temps disponible</li></ol>` : ""}
-    <h2>Pièces et tâches</h2>
-    ${niveaux.map(n => `<div class="level">${n}</div>${v.pieces.filter(p => p.present && p.niveau === n).map(p => {
-      const t = p.taches.filter(x => x.on);
-      return `<div class="sroom"><h3>${esc(p.nom)}${p.prio ? ` · priorité ${p.prio}` : ""}${p.vitres ? ` · vitres ${p.vitres}` : ""}</h3>
-        ${t.length ? `<ul>${t.map(x => `<li>${esc(x.t)}${x.mode !== "chaque" ? ` <span class="note">(${MODES[x.mode].toLowerCase()})</span>` : ""}</li>`).join("")}</ul>` : ""}
-        ${p.note ? `<p class="note">${esc(p.note)}</p>` : ""}
-        ${fig(photosDe(v.id, p.id))}</div>`;
-    }).join("")}`).join("")}
-    ${v.repassage.on ? `<h2>Repassage</h2><p>${hm(c.rep)} par passage</p>` : ""}
-  </div>`;
+  const prios = v.pieces.filter((p) => p.present && p.prio).sort((a, b) => a.prio - b.prio);
+  const fig = (list) => list.length ? '<div class="sph">'.concat(list.map((ph) => '<figure><img src="'.concat(src(ph), '" alt=""><figcaption>').concat(esc(ph.legende), "</figcaption></figure>")).join(""), "</div>") : "";
+  const infos = CHAMPS.filter(([k]) => k !== "nom" && cl[k]).map(([k, l]) => "<dt>".concat(l, "</dt><dd>").concat(esc(cl[k]), "</dd>")).join("");
+  const niveaux = NIVEAUX.filter((n) => v.pieces.some((p) => p.present && p.niveau === n));
+  return '<div class="sheet">\n    <h1>Feuille de route : '.concat(esc(cl.nom || "client"), '</h1>\n    <p class="sub">Visite du ').concat(new Date(v.date).toLocaleDateString("fr-FR"), " · ").concat(FREQS[v.freq].label.toLowerCase(), " · ").concat(dureeTxt(c.duree), " par passage · ").concat(eur(c.ttc), " TTC par mois</p>\n    ").concat(infos ? "<dl>".concat(infos, "</dl>") : "", "\n    ").concat(fig(photosDe(v.id, "general")), "\n    ").concat(prios.length ? '<h2>Priorités</h2><ol class="priolist">'.concat(prios.map((p) => "<li>".concat(esc(p.nom), "</li>")).join(""), "<li>Le reste de la maison selon le temps disponible</li></ol>") : "", "\n    <h2>Pièces et tâches</h2>\n    ").concat(niveaux.map((n) => '<div class="level">'.concat(n, "</div>").concat(v.pieces.filter((p) => p.present && p.niveau === n).map((p) => {
+    const t = p.taches.filter((x) => x.on);
+    return '<div class="sroom"><h3>'.concat(esc(p.nom)).concat(p.prio ? " · priorité ".concat(p.prio) : "").concat(p.vitres ? " · vitres ".concat(p.vitres) : "", "</h3>\n        ").concat(t.length ? "<ul>".concat(t.map((x) => "<li>".concat(esc(x.t)).concat(x.mode !== "chaque" ? ' <span class="note">('.concat(MODES[x.mode].toLowerCase(), ")</span>") : "", "</li>")).join(""), "</ul>") : "", "\n        ").concat(p.note ? '<p class="note">'.concat(esc(p.note), "</p>") : "", "\n        ").concat(fig(photosDe(v.id, p.id)), "</div>");
+  }).join(""))).join(""), "\n    ").concat(v.repassage.on ? "<h2>Repassage</h2><p>".concat(hm(c.rep), " par passage</p>") : "", "\n  </div>");
 }
 function renderFeuille(v) {
   const nb = photosDe(v.id).length;
-  return `<div class="panel">
-    <div class="row noprint">
-      <button class="btn primary" data-action="imprimer">Imprimer ou PDF</button>
-      <button class="btn" data-action="exporter">Enregistrer le fichier</button>
-      <span class="note">${nb} photo${nb > 1 ? "s" : ""} jointe${nb > 1 ? "s" : ""}</span>
-    </div>
-    <div class="card">${feuilleHTML(v, urlDe)}</div>
-  </div>`;
+  return '<div class="panel">\n    <div class="row noprint">\n      <button class="btn primary" data-action="imprimer">Imprimer ou PDF</button>\n      <button class="btn" data-action="exporter">Enregistrer le fichier</button>\n      <span class="note">'.concat(nb, " photo").concat(nb > 1 ? "s" : "", " jointe").concat(nb > 1 ? "s" : "", '</span>\n    </div>\n    <div class="card">').concat(feuilleHTML(v, urlDe), "</div>\n  </div>");
 }
-const enDataURL = blob => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(blob); });
+const enDataURL = (blob) => new Promise((ok) => {
+  const r = new FileReader();
+  r.onload = () => ok(r.result);
+  r.readAsDataURL(blob);
+});
 async function exporter(v, b) {
-  const lbl = b.textContent; b.textContent = "Préparation…";
+  const lbl = b.textContent;
+  b.textContent = "Préparation…";
   try {
-    const map = {}; for (const ph of photosDe(v.id)) map[ph.id] = await enDataURL(ph.blob);
+    const map = {};
+    for (const ph of photosDe(v.id)) map[ph.id] = await enDataURL(ph.blob);
     const css = document.querySelector("style").textContent;
-    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Feuille de route ${esc(v.client.nom)}</title><style>${css} body{padding:16px;max-width:900px;margin:0 auto}</style></head><body>${feuilleHTML(v, ph => map[ph.id])}</body></html>`;
-    const nom = `Feuille de route ${(v.client.nom || "client").replace(/[^\p{L}\p{N} -]/gu, "").trim()} ${v.date}.html`;
+    const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Feuille de route '.concat(esc(v.client.nom), "</title><style>").concat(css, " body{padding:16px;max-width:900px;margin:0 auto}</style></head><body>").concat(feuilleHTML(v, (ph) => map[ph.id]), "</body></html>");
+    const nom = "Feuille de route ".concat((v.client.nom || "client").replace(new RegExp("[^\\p{L}\\p{N} -]", "gu"), "").trim(), " ").concat(v.date, ".html");
     const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
-    if (dl) { try { await dl.save({ filename: nom, data: new Blob([html], { type: "text/html" }) }); } catch (e) {} }
-    else { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); a.download = nom; document.body.appendChild(a); a.click(); a.remove(); }
-  } finally { b.textContent = lbl; }
+    if (dl) {
+      try {
+        await dl.save({ filename: nom, data: new Blob([html], { type: "text/html" }) });
+      } catch (e) {
+      }
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+      a.download = nom;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  } finally {
+    b.textContent = lbl;
+  }
 }
 render();
 </script>
 
 <script>
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {
+  }));
 }
-try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+try {
+  navigator.storage && navigator.storage.persist && navigator.storage.persist();
+} catch (e) {
+}
 </script>
 </body>
 </html>
